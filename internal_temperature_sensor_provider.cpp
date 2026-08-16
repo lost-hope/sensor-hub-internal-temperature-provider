@@ -29,16 +29,18 @@ class InternalTemperatureSensorUsermod : public Usermod {
     uint16_t checkIntervalS = 30;            // how often to read the sensor
     String namePrefix = "internal";          // sensor name becomes "<prefix>_temperature"
     uint8_t precision = 1;                   // decimal places published
+    uint8_t priority = 200;                  // getValue() selection priority - lower wins among sensors of the same SensorType (see sensor_bus.h). Defaults deprioritized: this is chip die temperature, not ambient - a real ambient sensor should win by default if both are present.
 
     static const char _name[];
     static const char _enabled[];
     static const char _checkInterval[];
     static const char _namePrefix[];
     static const char _precision[];
+    static const char _priority[];
 
     void registerSensors() {
       if (!hub || tempHandle != SENSOR_HANDLE_INVALID) return; // already registered
-      tempHandle = hub->registerSensor((namePrefix + "_temperature").c_str(), SensorType::Temperature, nullptr, nullptr, precision);
+      tempHandle = hub->registerSensor((namePrefix + "_temperature").c_str(), SensorType::Temperature, nullptr, nullptr, precision, priority);
     }
 
   public:
@@ -73,6 +75,7 @@ class InternalTemperatureSensorUsermod : public Usermod {
       top[FPSTR(_checkInterval)] = checkIntervalS;
       top[FPSTR(_namePrefix)] = namePrefix;
       top[FPSTR(_precision)] = precision;
+      top[FPSTR(_priority)] = priority;
     }
 
     bool readFromConfig(JsonObject& root) override {
@@ -82,6 +85,7 @@ class InternalTemperatureSensorUsermod : public Usermod {
       configComplete &= getJsonValue(top[FPSTR(_checkInterval)], checkIntervalS);
       configComplete &= getJsonValue(top[FPSTR(_namePrefix)], namePrefix);
       configComplete &= getJsonValue(top[FPSTR(_precision)], precision);
+      configComplete &= getJsonValue(top[FPSTR(_priority)], priority);
       return configComplete;
     }
 
@@ -89,6 +93,7 @@ class InternalTemperatureSensorUsermod : public Usermod {
       settingsScript.print(F("addInfo('InternalTemperatureSensor:checkInterval',1,'seconds between sensor reads');"));
       settingsScript.print(F("addInfo('InternalTemperatureSensor:namePrefix',1,'sensor name becomes &lt;prefix&gt;_temperature - must be unique across all sensor providers');"));
       settingsScript.print(F("addInfo('InternalTemperatureSensor:precision',1,'decimal places published');"));
+      settingsScript.print(F("addInfo('InternalTemperatureSensor:priority',1,'getValue() selection priority - lower wins if another provider also registers a Temperature sensor. This is chip die temperature, not ambient - consider a higher (less preferred) value than dedicated ambient sensors');"));
     }
 };
 
@@ -97,6 +102,7 @@ const char InternalTemperatureSensorUsermod::_enabled[]       PROGMEM = "enabled
 const char InternalTemperatureSensorUsermod::_checkInterval[] PROGMEM = "checkInterval";
 const char InternalTemperatureSensorUsermod::_namePrefix[]    PROGMEM = "namePrefix";
 const char InternalTemperatureSensorUsermod::_precision[]     PROGMEM = "precision";
+const char InternalTemperatureSensorUsermod::_priority[]      PROGMEM = "priority";
 
 static InternalTemperatureSensorUsermod internal_temperature_sensor;
 REGISTER_USERMOD(internal_temperature_sensor);
