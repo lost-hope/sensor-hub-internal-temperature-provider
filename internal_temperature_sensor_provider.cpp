@@ -17,6 +17,9 @@
  * temperature, not room temperature. ESP32-only (temperatureRead() is not
  * available on ESP8266); this usermod is a no-op there.
  */
+
+REGISTER_SENSOR_SLOT(_slotTemp, "_temperature", SensorTypes::Temperature, 1, 200);
+
 class InternalTemperatureSensorUsermod : public Usermod {
   private:
     SensorHub* hub = nullptr;
@@ -40,7 +43,7 @@ class InternalTemperatureSensorUsermod : public Usermod {
 
     void registerSensors() {
       if (!hub || tempHandle != SENSOR_HANDLE_INVALID) return; // already registered
-      tempHandle = hub->registerSensor((namePrefix + "_temperature").c_str(), SensorType::Temperature, nullptr, nullptr, precision, priority);
+      tempHandle = hub->attachSensor(&_slotTemp, namePrefix.c_str(), precision, priority);
     }
 
   public:
